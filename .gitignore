@@ -1,0 +1,97 @@
+# Claude Code local settings
+.claude/settings.local.json
+
+# Claude Code logs and settings
+.claude/hooks/logs/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+venv/
+ENV/
+env/
+.venv
+
+# UV
+.venv/
+uv.lock
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Testing
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+.pytest_cache/
+cover/
+htmlcov/
+.hypothesis/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*.ipynb
+
+# pyenv
+.python-version
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# Ruff
+.ruff_cache/
+
+# Application specific
+/downloads/
+/generation_states/
+*.log
+*.mp4
+*.avi
+*.mov
+*.mkv
+
+# Debug files
+debug_*.py
+
+# Local configuration
+config.local.json
+settings.local.json

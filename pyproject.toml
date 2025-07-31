@@ -1,0 +1,58 @@
+[project]
+name = "pmind-veo-mcp"
+version = "0.1.0"
+description = "Veo 3 Video Generation MCP server built with FastMCP"
+authors = [{ name = "Piotr Kandziora", email = "raveenpl@gmail.com" }]
+requires-python = ">=3.12,<3.14"
+readme = "README.md"
+license = "MIT"
+keywords = [
+    "mcp",
+    "veo",
+    "video-generation",
+    "ai",
+    "gemini",
+    "fastmcp",
+    "model-context-protocol",
+]
+dependencies = [
+    "pydantic>=2.11.7,<3",
+    "fastmcp>=2.10.4,<3",
+    "python-dotenv>=1.1.1,<2",
+    "google>=3.0.0,<4",
+    "google-genai>=1.28.0,<2",
+    "psutil>=7.0.0,<8",
+    "requests>=2.32.4",
+]
+
+[project.scripts]
+pmind-veo-mcp = "src.server:main"
+
+[tool.hatch.build.targets.sdist]
+include = ["src"]
+
+[tool.hatch.build.targets.wheel]
+include = ["src"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+    "black>=25.1.0",
+    "isort>=6.0.1",
+    "ruff>=0.12.5",
+]
+
+[tool.black]
+line-length = 88
+target-version = ['py312']
+
+[tool.isort]
+profile = "black"
+line_length = 88
+
+[tool.ruff]
+line-length = 88
+target-version = "py312"
