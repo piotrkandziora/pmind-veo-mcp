@@ -3,7 +3,6 @@
 
 import argparse
 import asyncio
-import base64
 import json
 import logging
 import signal
@@ -102,21 +101,35 @@ class GenerationWorker:
             veo_client = VeoClient(config.gemini_api_key, model_to_use)
 
             # Load input image if provided
-            if args.input_image_path:
+            image_bytes = None
+            image_mime_type = None
+            if args.image_path:
                 try:
                     # Check if file exists
-                    if not Path(args.input_image_path).exists():
+                    if not Path(args.image_path).exists():
                         self._update_state(
                             {
                                 "status": "failed",
-                                "error": f"Input image not found: {args.input_image_path}",
+                                "error": f"Input image not found: {args.image_path}",
                             }
                         )
                         return
 
-                    with open(args.input_image_path, "rb") as f:
-                        # Image loading would go here if needed
-                        base64.b64encode(f.read()).decode("utf-8")
+                    # Read image bytes
+                    with open(args.image_path, "rb") as f:
+                        image_bytes = f.read()
+
+                    # Determine mime type from extension
+                    ext = Path(args.image_path).suffix.lower()
+                    mime_map = {
+                        ".jpg": "image/jpeg",
+                        ".jpeg": "image/jpeg",
+                        ".png": "image/png",
+                        ".gif": "image/gif",
+                        ".webp": "image/webp",
+                        ".bmp": "image/bmp",
+                    }
+                    image_mime_type = mime_map.get(ext, "image/jpeg")
                 except Exception as e:
                     self._update_state(
                         {
@@ -140,6 +153,8 @@ class GenerationWorker:
             generation_result = veo_client.start_video_generation(
                 prompt=args.prompt,
                 model=args.model,
+                image_bytes=image_bytes,
+                image_mime_type=image_mime_type,
                 aspect_ratio=args.aspect_ratio,
                 negative_prompt=args.negative_prompt,
                 person_generation=args.person_generation,
@@ -149,8 +164,8 @@ class GenerationWorker:
                 seed=args.seed,
                 enhance_prompt=args.enhance_prompt,
                 generate_audio=args.generate_audio,
-                output_gcs_uri=getattr(args, "output_gcs_uri", None),
-                fps=getattr(args, "fps", None),
+                output_gcs_uri=args.output_gcs_uri,
+                fps=args.fps,
             )
 
             if generation_result.get("error"):
@@ -242,11 +257,11 @@ def main():
     parser = argparse.ArgumentParser(description="Veo Video Generation Worker")
     parser.add_argument("--session-id", required=True, help="Generation session ID")
     parser.add_argument("--state-dir", required=True, help="State directory path")
-    parser.add_argument("--prompt", required=True, help="Text prompt for generation")
+    parser.add_argument("--prompt", help="Text prompt for generation")
     parser.add_argument(
         "--model",
         default=None,
-        choices=["veo-2.0-generate-001", "veo-3.0-generate-preview"],
+        choices=["veo-2.0-generate-001", "veo-3.0-generate-preview", "veo-3.0-fast-generate-preview"],
         help="Model to use (defaults to VEO_MODEL from config)",
     )
     parser.add_argument("--aspect-ratio", default="16:9", choices=["16:9", "9:16"])
@@ -258,12 +273,13 @@ def main():
     )
     parser.add_argument("--resolution", default=None, choices=["720p", "1080p"])
     parser.add_argument("--number-of-videos", type=int, default=1)
-    parser.add_argument("--duration-seconds", type=int, default=8)
+    parser.add_argument("--duration-seconds", type=int, default=None)
     parser.add_argument("--seed", type=int, default=None)
-    parser.add_argument("--input-image-path", default=None)
+    parser.add_argument("--image-path", default=None, help="Path to input image for image-to-video")
     parser.add_argument("--enhance-prompt", action="store_true")
     parser.add_argument("--generate-audio", action="store_true")
-    parser.add_argument("--storage-uri", default=None)
+    parser.add_argument("--output-gcs-uri", default=None, help="GCS URI for output storage")
+    parser.add_argument("--fps", type=int, default=None, help="Frames per second")
     parser.add_argument("--download-path", default=None, help="Directory to download videos to")
 
     try:

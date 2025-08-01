@@ -26,19 +26,27 @@ def register_tools(mcp: FastMCP, config: Config):
     @mcp.tool
     async def veo_generate_video(
         prompt: Annotated[
-            str,
+            Optional[str],
             Field(
-                description="Text prompt describing the video to generate. Be specific about visual elements, style, and movement.",
+                description="Text prompt describing the video to generate. Be specific about visual elements, style, and movement. Required for text-to-video, optional for image-to-video.",
             ),
-        ],
+        ] = None,
+        # Image input for image-to-video (Veo 3)
+        image_path: Annotated[
+            Optional[str],
+            Field(
+                default=None,
+                description="Path to input image for image-to-video generation (Veo 3 only). The image becomes the first frame of the video. Max 20MB.",
+            ),
+        ] = None,
         # Model selection
         model: Annotated[
-            Optional[Literal["veo-2.0-generate-001", "veo-3.0-generate-preview"]],
+            Optional[Literal["veo-2.0-generate-001", "veo-3.0-generate-preview", "veo-3.0-fast-generate-preview"]],
             Field(
-                default="veo-3.0-generate-preview",
-                description="Veo model to use for generation",
+                default="veo-3.0-fast-generate-preview",
+                description="Veo model to use for generation. veo-3.0-fast optimizes for speed.",
             ),
-        ] = "veo-3.0-generate-preview",
+        ] = "veo-3.0-fast-generate-preview",
         # Video parameters
         aspect_ratio: Annotated[
             Literal["16:9", "9:16"],
@@ -76,7 +84,7 @@ def register_tools(mcp: FastMCP, config: Config):
             Optional[Union[int, str]],
             Field(
                 default=None,
-                description="Video duration in seconds (2-15, optional, SDK will use model default if not specified)",
+                description="Video duration in seconds (2-15). Not supported by veo-3.0-fast model. SDK uses model default if not specified.",
             ),
         ] = None,
         seed: Annotated[
@@ -114,7 +122,12 @@ def register_tools(mcp: FastMCP, config: Config):
         ] = None,
     ) -> Dict[str, Any]:
         """
-        Generate videos using Google's Veo text-to-video models.
+        Generate videos using Google's Veo models.
+
+        Supports:
+        - Text-to-video: Provide a text prompt (all models)
+        - Image-to-video: Provide an image path (Veo 3 only)
+        - Both: Provide both image and prompt for guided animation (Veo 3 only)
 
         This tool starts a background video generation process that:
         1. Initiates video generation with the specified parameters
@@ -127,9 +140,9 @@ def register_tools(mcp: FastMCP, config: Config):
         - status: Current generation status
         - pid: Process ID of the background worker
 
-        Example:
-            Generate a nature video: "Serene waterfall in a lush forest, cinematic lighting"
-            Generate with specific style: "Cyberpunk cityscape at night, neon lights, rain"
+        Examples:
+            Text-to-video: "Serene waterfall in a lush forest, cinematic lighting"
+            Image-to-video: Use image_path="/path/to/image.jpg" with optional prompt
         """
         try:
             # Parse parameters that might come as strings
@@ -140,10 +153,45 @@ def register_tools(mcp: FastMCP, config: Config):
             enhance_prompt = parse_bool_param(enhance_prompt) if enhance_prompt is not None else False
             generate_audio = parse_bool_param(generate_audio) if generate_audio is not None else False
 
+            # Validate inputs
+            if not prompt and not image_path:
+                return {
+                    "error": "Either prompt or image_path must be provided",
+                    "success": False,
+                }
+
+            # Validate image-to-video is only for Veo 3 models
+            if image_path and not model.startswith("veo-3.0"):
+                return {
+                    "error": "Image-to-video is only supported by Veo 3 models (veo-3.0-generate-preview, veo-3.0-fast-generate-preview)",
+                    "success": False,
+                }
+
+            # Validate model-specific constraints
+            if model == "veo-3.0-fast-generate-preview" and duration_seconds is not None:
+                logger.warning("Veo 3 Fast model does not support duration_seconds parameter, ignoring it")
+                duration_seconds = None
+            
+            # Validate image file if provided
+            if image_path:
+                image_file = Path(image_path)
+                if not image_file.exists():
+                    return {
+                        "error": f"Image file not found: {image_path}",
+                        "success": False,
+                    }
+                # Check file size (20MB limit)
+                if image_file.stat().st_size > 20 * 1024 * 1024:
+                    return {
+                        "error": "Image file size exceeds 20MB limit",
+                        "success": False,
+                    }
+
             # Start generation process (no automatic download)
             result = generation_manager.start_generation(
                 prompt=prompt,
                 model=model,
+                image_path=image_path,
                 aspect_ratio=aspect_ratio,
                 negative_prompt=negative_prompt,
                 person_generation=person_generation,
@@ -169,6 +217,7 @@ def register_tools(mcp: FastMCP, config: Config):
                 "model": model,
                 "parameters": {
                     "prompt": prompt,
+                    "image_path": image_path,
                     "aspect_ratio": aspect_ratio,
                     "duration_seconds": duration_seconds,
                     "number_of_videos": number_of_videos,

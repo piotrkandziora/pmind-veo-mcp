@@ -90,14 +90,15 @@ class GenerationManager:
 
     def start_generation(
         self,
-        prompt: str,
+        prompt: Optional[str] = None,
         model: str = "veo-2",
+        image_path: Optional[str] = None,
         aspect_ratio: str = "16:9",
         negative_prompt: Optional[str] = None,
         person_generation: str = "allow_adult",
         resolution: Optional[str] = None,
         number_of_videos: int = 1,
-        duration_seconds: int = 8,
+        duration_seconds: Optional[int] = None,
         seed: Optional[int] = None,
         enhance_prompt: bool = False,
         generate_audio: bool = False,
@@ -118,6 +119,7 @@ class GenerationManager:
             "progress": "initializing subprocess",
             "prompt": prompt,
             "model": model,
+            "image_path": image_path,
             "number_of_videos": number_of_videos,
             "videos": [],
             "started_at": datetime.utcnow().isoformat() + "Z",
@@ -159,8 +161,6 @@ class GenerationManager:
             session_id,
             "--state-dir",
             str(self.state_dir),
-            "--prompt",
-            prompt,
             "--model",
             model,
             "--aspect-ratio",
@@ -169,14 +169,19 @@ class GenerationManager:
             person_generation,
             "--number-of-videos",
             str(number_of_videos),
-            "--duration-seconds",
-            str(duration_seconds),
         ]
+
+        if prompt:
+            cmd.extend(["--prompt", prompt])
+        if image_path:
+            cmd.extend(["--image-path", image_path])
 
         if negative_prompt:
             cmd.extend(["--negative-prompt", negative_prompt])
         if resolution:
             cmd.extend(["--resolution", resolution])
+        if duration_seconds is not None:
+            cmd.extend(["--duration-seconds", str(duration_seconds)])
         if seed is not None:
             cmd.extend(["--seed", str(seed)])
         if output_gcs_uri:

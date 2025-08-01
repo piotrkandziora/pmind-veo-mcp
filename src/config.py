@@ -13,7 +13,7 @@ class Config(BaseModel):
 
     config_dir: str = Field(description="Configuration directory path")
     gemini_api_key: str = Field(description="Gemini API key for Veo access")
-    veo_model: Literal["veo-2.0-generate-001", "veo-3.0-generate-preview"] = Field(
+    veo_model: Literal["veo-2.0-generate-001", "veo-3.0-generate-preview", "veo-3.0-fast-generate-preview"] = Field(
         description="Default Veo model to use"
     )
 

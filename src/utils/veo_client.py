@@ -23,8 +23,11 @@ class VeoClient:
 
     def start_video_generation(
         self,
-        prompt: str,
+        prompt: Optional[str] = None,
         model: Optional[str] = None,
+        # Image input for image-to-video (Veo 3)
+        image_bytes: Optional[bytes] = None,
+        image_mime_type: Optional[str] = None,
         # Video generation parameters supported by SDK
         aspect_ratio: Literal["16:9", "9:16"] = "16:9",  # SDK only supports 16:9 and 9:16
         negative_prompt: Optional[str] = None,
@@ -42,14 +45,22 @@ class VeoClient:
         Start video generation and return operation info.
 
         Uses the google-genai SDK's generate_videos method.
+        Supports text-to-video and image-to-video (Veo 3).
         """
         try:
             # Model name is already normalized by Config
             model_to_use = model or self.default_model
 
+            # Validate inputs
+            if not prompt and not image_bytes:
+                return {"error": "Either prompt or image must be provided", "done": True}
+
             # Log the attempt
             logger.info(f"Starting video generation with model: {model_to_use}")
-            logger.info(f"Prompt: {prompt}")
+            if prompt:
+                logger.info(f"Prompt: {prompt}")
+            if image_bytes:
+                logger.info(f"Image provided: {len(image_bytes)} bytes, mime_type: {image_mime_type}")
 
             # Build config for video generation using all supported SDK parameters
             config_params = {
@@ -81,8 +92,15 @@ class VeoClient:
             # Create config object
             video_config = types.GenerateVideosConfig(**config_params)
 
+            # Prepare image if provided
+            image = None
+            if image_bytes:
+                image = types.Image(image_bytes=image_bytes, mime_type=image_mime_type)
+
             # Start video generation
-            operation = self.client.models.generate_videos(model=model_to_use, prompt=prompt, config=video_config)
+            operation = self.client.models.generate_videos(
+                model=model_to_use, prompt=prompt, image=image, config=video_config
+            )
 
             return {
                 "operation": operation,

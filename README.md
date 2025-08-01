@@ -9,6 +9,8 @@ A Python implementation of an MCP (Model Context Protocol) server using FastMCP 
 ### Core Capabilities
 
 - **Video Generation**: Generate videos from text prompts using Veo models
+- **Image-to-Video**: Animate images with Veo 3 models
+- **Fast Generation**: Veo 3 Fast model for speed-optimized video creation
 - **Subprocess Architecture**: Non-blocking video generation with isolated subprocess handling
 - **Progress Tracking**: Real-time status updates via state file monitoring
 - **Video Downloads**: Download completed videos using the official google-genai SDK
@@ -48,7 +50,7 @@ cp .env.example .env
 GEMINI_API_KEY=your_api_key_here
 
 # Required: Default Veo model to use
-# Options: veo-2.0-generate-001, veo-3.0-generate-preview
+# Options: veo-2.0-generate-001, veo-3.0-generate-preview, veo-3.0-fast-generate-preview
 VEO_MODEL=veo-3.0-generate-preview
 
 # Optional: Configuration directory (default: ~/.pmind-veo-mcp)
@@ -79,17 +81,11 @@ Add the MCP server to your client's MCP configuration:
 - `VEO_MODEL`: Default model (must be full API name):
   - `veo-2.0-generate-001` for Veo 2
   - `veo-3.0-generate-preview` for Veo 3
+  - `veo-3.0-fast-generate-preview` for Veo 3 Fast (speed-optimized)
 
 ### Optional Environment Variables
 
 - `CONFIG_DIR`: Directory for state files and downloads (default: `~/.pmind-veo-mcp`)
-
-## Usage
-
-Once configured, the server provides tools through your MCP client.
-
-
-
 
 ## MCP Tools Reference
 
